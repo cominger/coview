@@ -43,6 +43,8 @@ def main():
     if args.debug:
         pdb.set_trace()
 
+    device = torch.device("cuda" if use_cuda else "cpu")
+
     # Data
     print('==> Preparing data..')
     #prepare data
@@ -79,40 +81,35 @@ def main():
     # Load checkpoint.
     audio_net = resnet50(conv1_channel=3)
     rgb_net   = resnet50(conv1_channel=3)
-    audio_net = torch.nn.DataParallel(audio_net, device_ids=[0])
-    rgb_net   = torch.nn.DataParallel(rgb_net, device_ids=[1])
+    audio_net = torch.nn.DataParallel(audio_net, device_ids=[0,1])
+    rgb_net   = torch.nn.DataParallel(rgb_net, device_ids=[0,1])
    
     print('==> Resuming from checkpoint..')
     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
     checkpoint = torch.load('./checkpoint/coview_resnet_50_pretrained_imagenet_SGD_audio_.pt')          #ver_1
-    #checkpoint = torch.load('./checkpoint/coview_ver2_resnet_50_pretrained_imagenet_SGD_audio_.pt')      #ver_2
     audio_net.load_state_dict(checkpoint['net'])
     audio_best_acc = checkpoint['acc']
     autio_start_epoch = checkpoint['epoch']
     
     checkpoint = torch.load('./checkpoint/coview_resnet_50_pretrained_imagenet_SGD_rgb_.pt')            #ver_1
-    #checkpoint = torch.load('./checkpoint/coview_ver2_resnet_50_pretrained_imagenet_SGD_audio_.pt')      #ver_2
     rgb_net.load_state_dict(checkpoint['net'])
     rgb_best_acc = checkpoint['acc']
     rgb_start_epoch = checkpoint['epoch']
 
 
     if use_cuda:
-        audio_net.cuda(0)
-        rgb_net.cuda(1)
-       # audio_net = torch.nn.DataParallel(audio_net, device_ids=[0])
-       # rgb_net = torch.nn.DataParallel(rgb_net, device_ids=[1])
         cudnn.benchmark = True
+
+    net = net.to(device)
 
     start_time = time.time()
    
     #print("training")
     #two_stream_comb(audio_net,rgb_net,trainloader,args)
     print("Validation")
-    two_stream(audio_net,rgb_net,valloader,args)
+    two_stream(audio_net, rgb_net, device, valloader, args)
     #print("Test")
     #two_stream(audio_net,rgb_net,testloader,args)
-    
     
     time_cost = time.time() - start_time
     print("\n total_time_cost",int(time_cost/60), "min")

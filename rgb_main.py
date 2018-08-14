@@ -44,6 +44,8 @@ def main():
     if args.debug:
         pdb.set_trace()
 
+    device = torch.device("cuda" if use_cuda else "cpu")
+
     # Data
     print('==> Preparing data..')
     #prepare data
@@ -66,10 +68,6 @@ def main():
         transforms.ToTensor(),
 
     ])
-
-
-    #coview_val = DatasetFolder(root='./val', loader=numpy_loader, extensions='npz', transform=transform_train)
-    #dataloader = DataLoader(coview_val, batch_size=5, shuffle=True)
 
     coview_train = DatasetFolder(root='../coview_data/train/', loader=numpy_loader, extensions='npz', transform=transform_train)
     trainloader = DataLoader(coview_train, batch_size=t_batch_size, shuffle=True, num_workers=8)
@@ -103,23 +101,20 @@ def main():
         # net = SENet18()
 
     if use_cuda:
-        net.cuda()
         net = torch.nn.DataParallel(net, device_ids=range(torch.cuda.device_count()))
         cudnn.benchmark = True
 
+    net = net.to(device)
+
     criterion = nn.CrossEntropyLoss()
-    # criterion = nn.MultiLabelMarginLoss()
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
-    # optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=5e-4)
     scheduler = MultiStepLR(optimizer, milestones=lr_step, gamma=0.1)
     
     start_time = time.time()
     for epoch in range(start_epoch, end_epoch):
-        # pdb.set_trace()
-        #test(epoch, net,valloader,criterion, args)
-        train_rgb(epoch, net, optimizer, trainloader, criterion, args)
+        train_rgb(epoch, net, device, optimizer, trainloader, criterion, args)
         scheduler.step()
-        test_rgb(epoch, net,valloader,criterion, args)
+        test_rgb(epoch, net, device, valloader,criterion, args)
     
     time_cost = time.time() - start_time
     print("total_time_cost",int(time_cost/60), "min")
