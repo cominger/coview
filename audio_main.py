@@ -35,11 +35,11 @@ args = parser.parse_args()
 def main():
     use_cuda = torch.cuda.is_available()
     start_epoch = 0  # start from epoch 0 or last checkpoint epoch
-    end_epoch = 25
-    lr_step = [5, 10, 15, 20]
-    # lr_step = [60,90]
+    end_epoch = 120
+    #lr_step = [5, 10, 15, 20]
+    lr_step = [60,90]
     
-    t_batch_size=50 #limit 100
+    t_batch_size=100 #limit 100
 
     if args.debug:
         pdb.set_trace()
@@ -51,8 +51,8 @@ def main():
     transform_train = transforms.Compose([
         RepeatTensor(3, 1, 1),
         transforms.ToPILImage(),
-        # transforms.RandomResizedCrop(224),
-        transforms.Resize((224, 224)),
+        transforms.RandomResizedCrop(224),
+        #transforms.Resize((224, 224)),
         #transforms.Resize((256,256)),
         #transforms.RandomCrop(224),
         transforms.ToTensor(),
@@ -103,8 +103,8 @@ def main():
         # net = SENet18()
 
     if use_cuda:
-        net.cuda(1)
-        # net = torch.nn.DataParallel(net, device_ids=[1])
+        net.cuda()
+        net = torch.nn.DataParallel(net, device_ids=range(torch.cuda.device_count()))
         cudnn.benchmark = True
 
     criterion = nn.CrossEntropyLoss()

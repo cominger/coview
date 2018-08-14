@@ -38,7 +38,7 @@ def main():
     #lr_step = [5, 10, 15, 20]
     lr_step = [60,90]
     
-    t_batch_size=50 #limit 100
+    t_batch_size = 300 #limit 100
 
     if args.debug:
         pdb.set_trace()
@@ -79,18 +79,18 @@ def main():
     # Load checkpoint.
     audio_net = resnet50(conv1_channel=3)
     rgb_net   = resnet50(conv1_channel=3)
-    # audio_net = torch.nn.DataParallel(audio_net, device_ids=[0])
-    # rgb_net   = torch.nn.DataParallel(rgb_net, device_ids=[1])
+    audio_net = torch.nn.DataParallel(audio_net, device_ids=[0])
+    rgb_net   = torch.nn.DataParallel(rgb_net, device_ids=[1])
    
     print('==> Resuming from checkpoint..')
     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    checkpoint = torch.load('./checkpoint/coview_ver1_resnet_50_with_transform_pretrained_imagenet_SGD_audio_.pt')          #ver_1
+    checkpoint = torch.load('./checkpoint/coview_resnet_50_pretrained_imagenet_SGD_audio_.pt')          #ver_1
     #checkpoint = torch.load('./checkpoint/coview_ver2_resnet_50_pretrained_imagenet_SGD_audio_.pt')      #ver_2
     audio_net.load_state_dict(checkpoint['net'])
     audio_best_acc = checkpoint['acc']
     autio_start_epoch = checkpoint['epoch']
     
-    checkpoint = torch.load('./checkpoint/coview_ver1_resnet_50_pretrained_imagenet_SGD_rgb_.pt')            #ver_1
+    checkpoint = torch.load('./checkpoint/coview_resnet_50_pretrained_imagenet_SGD_rgb_.pt')            #ver_1
     #checkpoint = torch.load('./checkpoint/coview_ver2_resnet_50_pretrained_imagenet_SGD_audio_.pt')      #ver_2
     rgb_net.load_state_dict(checkpoint['net'])
     rgb_best_acc = checkpoint['acc']
@@ -100,22 +100,22 @@ def main():
     if use_cuda:
         audio_net.cuda(0)
         rgb_net.cuda(1)
-        audio_net = torch.nn.DataParallel(audio_net, device_ids=[0])
-        rgb_net = torch.nn.DataParallel(rgb_net, device_ids=[1])
+       # audio_net = torch.nn.DataParallel(audio_net, device_ids=[0])
+       # rgb_net = torch.nn.DataParallel(rgb_net, device_ids=[1])
         cudnn.benchmark = True
 
     start_time = time.time()
-    
-    # print("Train")
-    # two_stream(audio_net,rgb_net,trainloader,args)
+   
+    #print("training")
+    #two_stream_comb(audio_net,rgb_net,trainloader,args)
     print("Validation")
     two_stream(audio_net,rgb_net,valloader,args)
-    print("Test")
-    two_stream(audio_net,rgb_net,testloader,args)
+    #print("Test")
+    #two_stream(audio_net,rgb_net,testloader,args)
     
     
     time_cost = time.time() - start_time
-    print("total_time_cost",int(time_cost/60), "min")
+    print("\n total_time_cost",int(time_cost/60), "min")
 
 if __name__ == '__main__':
     main()

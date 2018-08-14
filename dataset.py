@@ -114,6 +114,7 @@ class DatasetFolder(data.Dataset):
         sample = self.loader(path)
         rgb = torch.Tensor(sample['rgb']).unsqueeze(0)
         audio = torch.Tensor(sample['audio']).unsqueeze(0)
+        ids = str(sample['ids'])
 
         if self.transform is not None:
             rgb = self.transform(rgb)
@@ -123,14 +124,14 @@ class DatasetFolder(data.Dataset):
             scene_target = self.target_transform(scene_target)
             action_target = self.target_transform(action_target)
 
-        return rgb, audio, scene_target, action_target
+        return rgb, audio, scene_target, action_target, ids
 
     def __len__(self):
         return len(self.samples)
 
     def __repr__(self):
         fmt_str = 'Dataset ' + self.__class__.__name__ + '\n'
-        fmt_str += '    Number of datapoints: {}\n'.format(self.__len__())                                                              
+        fmt_str += '    Number of datapoints: {}\n'.format(self.__len__())
         fmt_str += '    Root Location: {}\n'.format(self.root)
         tmp = '    Transforms (if any): '
         fmt_str += '{0}{1}\n'.format(tmp, self.transform.__repr__().replace('\n', '\n' + ' ' * len(tmp)))
@@ -142,53 +143,3 @@ class DatasetFolder(data.Dataset):
 def numpy_loader(path):
     return np.load(path, encoding='latin1')
 
-
-class DataSetFoler_limit(data.Dataset):
-    # limit minimum number of dataset's height
-    def __init__(self, limit, DSFolder, save, save_file, transform = None):
-        self.limit = limit
-        self.D_limit = DSFolder
-        self.transform = transform
-
-        self.new_idx = []
-
-        print('DataSetFolder_limit\'s Initializer')
-
-        if save != True:
-            print('Save File does not exist. Start limiting... limit : %d' % self.limit)
-            for i in range(DSFolder.__len__()):
-                if i%1000 == 0:
-                    p = (i*1.0/DSFolder.__len__()) * 100
-                    print('%2.2f%%' % p)
-                if DSFolder[i][0].shape[1] >= limit:
-                    self.new_idx.append(i)
-            
-            print('Saving File...')
-            f = open(save_file, 'w')
-            for i in range(len(self.new_idx)):
-                f.write(str(self.new_idx[i])+'\n')
-
-        else:
-            print('Save File exist. Loading...')
-            f = open(save_file, 'r')
-            txt = f.read()
-            l = txt.split('\n')
-            l = l[:-1]
-            self.new_idx = list(map(int,l))
-
-        print('Done')
-
-
-    def __len__(self):
-        return len(self.new_idx)
-
-    def __getitem__(self,index):
-        if self.transform is not None:
-            rgb = self.transform(self.D_limit[self.new_idx[index]][0])
-            audio = self.transform(self.D_limit[self.new_idx[index]][1])
-
-        #if self.target_transform is not None:
-        #    scene_target = self.target_transform(scene_target)
-        #    action_target = self.target_transform(action_target)
-
-        return rgb, audio, self.D_limit[self.new_idx[index]][2], self.D_limit[self.new_idx[index]][3]

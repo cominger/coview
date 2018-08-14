@@ -35,11 +35,11 @@ args = parser.parse_args()
 def main():
     use_cuda = torch.cuda.is_available()
     start_epoch = 0  # start from epoch 0 or last checkpoint epoch
-    end_epoch = 10
+    end_epoch = 25
     lr_step = [5, 10, 15, 20]
     #lr_step = [60,90]
     
-    t_batch_size=50 #limit 100
+    t_batch_size=100 #limit 100
 
     if args.debug:
         pdb.set_trace()
@@ -71,10 +71,10 @@ def main():
     #coview_val = DatasetFolder(root='./val', loader=numpy_loader, extensions='npz', transform=transform_train)
     #dataloader = DataLoader(coview_val, batch_size=5, shuffle=True)
 
-    coview_train = DatasetFolder(root='../coview_data/train_ver1/', loader=numpy_loader, extensions='npz', transform=transform_train)
+    coview_train = DatasetFolder(root='../coview_data/train/', loader=numpy_loader, extensions='npz', transform=transform_train)
     trainloader = DataLoader(coview_train, batch_size=t_batch_size, shuffle=True, num_workers=8)
 
-    coview_val = DatasetFolder(root='../coview_data/val_ver1/', loader=numpy_loader, extensions='npz', transform=transform_test)
+    coview_val = DatasetFolder(root='../coview_data/val/', loader=numpy_loader, extensions='npz', transform=transform_test)
     valloader = DataLoader(coview_val, batch_size=t_batch_size, shuffle=False, num_workers=8)
 
 
@@ -103,8 +103,8 @@ def main():
         # net = SENet18()
 
     if use_cuda:
-        net.cuda(2)
-        # net = torch.nn.DataParallel(net, device_ids=[0])
+        net.cuda()
+        net = torch.nn.DataParallel(net, device_ids=range(torch.cuda.device_count()))
         cudnn.benchmark = True
 
     criterion = nn.CrossEntropyLoss()
